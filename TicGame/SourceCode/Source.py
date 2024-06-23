@@ -3,15 +3,16 @@ from pymongo import MongoClient
 
 # Initialize MongoDB client and database
 client = MongoClient("localhost", 27017)
-db = client.SnakeUser
+db = client.TicTacPlayers
 Users = db.Users
 
 class Tic2Player:
-    def __init__(self):
+    def __init__(self, User):
         self.board = ["-", "-", "-", "-", "-", "-", "-", "-", "-"]
         self.current_player = "X"
         self.winner = None
         self.game_running = True
+        self.User = User
 
     def print_board(self):
         print(f"{self.board[0]} | {self.board[1]} | {self.board[2]}")
@@ -50,6 +51,10 @@ class Tic2Player:
                 return True
         return False
 
+    def updateUserWins(self):
+        if self.winner == "X":
+            self.User.updateWins()
+
     # Function to check for a tie
     def check_tie(self):
         if "-" not in self.board:
@@ -69,15 +74,38 @@ class Tic2Player:
                 self.switch_player()
                 break
 
+class User():
+    def __init__(self):
+        self.Nickname = None
+        self.Wins = 0
+
+    def updateNickname(self):
+        name = input("Enter your nickname: ")
+        existing_user = Users.find_one({"Nickname": name})
+        if existing_user:
+            print("Nickname already taken. Welcome back!")
+            self.Nickname = existing_user["Nickname"]
+            self.Wins = existing_user["Wins"]
+        else:
+            self.Nickname = name
+            Users.insert_one({"Nickname": self.Nickname, "Wins": self.Wins})
+
+    def updateWins(self):
+        self.Wins += 1
+        Users.update_one({"Nickname": self.Nickname}, {"$set": {"Wins": self.Wins}})
+
+
 if __name__ == "__main__":
-    Tic2Player = Tic2Player()
+    user = User()
+    Tic2Player = Tic2Player(user)
+    Tic2Player.User.updateNickname()
 
     while Tic2Player.game_running:
         Tic2Player.print_board()
         Tic2Player.player_input()
         if Tic2Player.check_winner():
             print(f"The winner is {Tic2Player.winner}")
-            Tic2Player.game_running = False
+            Tic2Player.updateUserWins()
         elif Tic2Player.check_tie():
             break
         if Tic2Player.game_running:
@@ -88,33 +116,3 @@ if __name__ == "__main__":
                 Tic2Player.game_running = False
             elif Tic2Player.check_tie():
                 break
-
-# def main():
-#     while Tic2Player.game_running:
-#         Tic2Player.print_board()
-#         Tic2Player.player_input()
-#         if Tic2Player.check_winner():
-#             print(f"The winner is {Tic2Player.winner}")
-#             game_running = False
-#         elif Tic2Player.check_tie():
-#             break
-#         if Tic2Player.game_running:
-#             Tic2Player.switch_player()
-#             Tic2Player.ai_opp()
-#             if Tic2Player.check_winner():
-#                 print(f"The winner is {winner}")
-#                 Tic2Player.game_running = False
-#             elif Tic2Player.check_tie():
-#                 break
-
-# Tic2Player = Tic2Player()
-# Tic2Player.board[0] = Tic2Player.board[1] = Tic2Player.board[4] = "X"
-# Tic2Player.board[2] = Tic2Player.board[3] = Tic2Player.board[7] = Tic2Player.board[8] = "O"
-# Tic2Player.board[5] = Tic2Player.board[6] = "X"
-# Tic2Player.print_board()
-# Tic2Player.check_tie()
-# print(Tic2Player.game_running)
-
-#
-# if __name__ == "__main__":
-#     main()

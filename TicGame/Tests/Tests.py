@@ -1,9 +1,18 @@
 import pytest
-from SourceCode.Source import Tic2Player
+from SourceCode.Source import Tic2Player, User
+from pymongo import MongoClient
+
+# Initialize MongoDB client and database
+client = MongoClient("localhost", 27017)
+db = client.TicTacPlayers
+Users = db.Users
 
 @pytest.fixture
 def game():
-    return Tic2Player()
+    user = User()
+    user.Nickname = "testuser"
+    Users.delete_many({"Nickname": "testuser"})
+    return Tic2Player(user)
 
 def test_board_initialization(game):
     assert game.board == ["-", "-", "-", "-", "-", "-", "-", "-", "-"]
@@ -35,6 +44,7 @@ def test_check_winner(game):
     assert game.game_running is False
 
     game.board = ["O", "-", "-", "O", "-", "-", "O", "-", "-"]
+    game.current_player = "O"
     assert game.check_winner() is True
     assert game.winner == "O"
     assert game.game_running is False
@@ -50,3 +60,12 @@ def test_switch_player(game):
     assert game.current_player != initial_player
     game.switch_player()
     assert game.current_player == initial_player
+def test_user_update_wins(game):
+    initial_wins = game.User.Wins
+    game.board = ["X", "X", "X", "-", "-", "-", "-", "-", "-"]
+    game.check_winner()
+    game.updateUserWins()
+    assert game.User.Wins == initial_wins + 1
+
+if __name__ == "__main__":
+    pytest.main()
